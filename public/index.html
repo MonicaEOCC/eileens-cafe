@@ -383,6 +383,8 @@ function pickRole(r){
     document.getElementById('kitchenScreen').classList.add('active');
     initKitchen();
   }
+  // Scroll to top so staff see the screen immediately
+  window.scrollTo({top:0,behavior:'smooth'});
 }
 
 function resetRole(){
@@ -449,7 +451,7 @@ async function pushOrder(order){
 }
 
 // ── WAITER STATE ──
-let wst={table:null,curCust:0,orders:[newOrder(),newOrder(),newOrder(),newOrder()],custNames:['','','','']};
+let wst={table:null,isTakeaway:false,curCust:0,orders:[newOrder(),newOrder(),newOrder(),newOrder()],custNames:['','','','']};
 let waiterTab='orderTab';
 
 function newOrder(){return{drinks:[],foods:[]};}
@@ -472,6 +474,7 @@ function showWaiterTab(tab,el){
   if(tab==='settingsTab') loadSettings();
   if(tab==='sentTab') refreshSentTab();
   if(tab==='billsTab') initBillsTab();
+  window.scrollTo({top:0,behavior:'smooth'});
 }
 
 // ── ORDER SCREEN BUILD ──
@@ -481,17 +484,35 @@ function buildTableGrid(){
   const g=document.getElementById('tableGrid');g.innerHTML='';
   for(let i=1;i<=(parseInt(settings.numTables)||5);i++){
     const d=document.createElement('div');
-    d.className='tbl-btn'+(wst.table===i?' active':'');
+    d.className='tbl-btn'+(wst.table===i&&!wst.isTakeaway?' active':'');
     d.innerHTML='<span class="tbl-icon">🍽️</span>Table '+i;
     d.onclick=()=>setTable(i);
     g.appendChild(d);
   }
+  // Takeaway button
+  const tw=document.createElement('div');
+  tw.className='tbl-btn'+(wst.isTakeaway?' active':'');
+  tw.style.background=wst.isTakeaway?'var(--amber)':'';
+  tw.style.color=wst.isTakeaway?'white':'';
+  tw.style.borderColor=wst.isTakeaway?'var(--amber)':'';
+  tw.innerHTML='<span class="tbl-icon">🥡</span>Takeaway';
+  tw.onclick=()=>setTakeaway();
+  g.appendChild(tw);
 }
 
 function setTable(n){
   wst.table=n;
+  wst.isTakeaway=false;
   buildTableGrid();
   document.getElementById('waiterSub').textContent='Table '+n;
+  refreshSummaryPanel();
+}
+
+function setTakeaway(){
+  wst.table='takeaway';
+  wst.isTakeaway=true;
+  buildTableGrid();
+  document.getElementById('waiterSub').textContent='Takeaway 🥡';
   refreshSummaryPanel();
 }
 
@@ -647,6 +668,8 @@ async function sendOrder(){
   const order={
     id:'ord_'+Date.now()+'_'+Math.random().toString(36).slice(2,6),
     tableNum:wst.table,
+    isTakeaway:wst.isTakeaway||false,
+    isTakeaway:wst.isTakeaway||false,
     waiterDevice:deviceId,
     time:new Date().toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit'}),
     items
@@ -655,7 +678,7 @@ async function sendOrder(){
   await pushOrder(order);
 
   // reset order state but keep table selected
-  wst={table:wst.table,curCust:0,orders:[newOrder(),newOrder(),newOrder(),newOrder()],custNames:['','','','']};
+  wst={table:wst.table,isTakeaway:wst.isTakeaway||false,curCust:0,orders:[newOrder(),newOrder(),newOrder(),newOrder()],custNames:['','','','']};
   buildOrderScreen();
   btn.disabled=false;btn.textContent='Send to Kitchen';
 
@@ -728,7 +751,7 @@ function renderKitchen(){
     order.items.forEach((item,i)=>{
       const key=order.id+'_'+i;
       const isDone=!!kitchenDoneMap[key];
-      const entry={...item,orderId:order.id,itemIdx:i,tableNum:order.tableNum,time:order.time,isDone};
+      const entry={...item,orderId:order.id,itemIdx:i,tableNum:order.tableNum,isTakeaway:order.isTakeaway||false,time:order.time,isDone};
       if(item.type==='drink') drinks.push(entry);
       else foods.push(entry);
     });
@@ -752,7 +775,7 @@ function renderKitchen(){
             (x.breadImg?'<img src="'+x.breadImg+'" width="32" height="32" style="border-radius:6px;object-fit:cover" title="bread">':'')+ 
             (x.spreadImg?'<img src="'+x.spreadImg+'" width="32" height="32" style="border-radius:6px;object-fit:cover" title="spread">':'')+ 
           '</div>':'')+
-          '<div class="k-item-who">'+x.who+' · Table '+x.tableNum+'</div>'+
+          '<div class="k-item-who">'+x.who+(x.isTakeaway?' · <span style="background:var(--amber);color:white;padding:1px 6px;border-radius:6px;font-size:10px;font-weight:800">TAKEAWAY</span>':' · Table '+x.tableNum)+'</div>'+
         '</div>'+
         '<button class="done-btn'+(done?' done':'')+'" onclick="markKitchenDone(\''+key+'\',this)">'+(done?'✓ Done':'Done')+'</button>'+
       '</div>';
@@ -814,6 +837,15 @@ function buildBillsTableGrid(){
     d.onclick=function(){billsSelectedTable=n;buildBillsTableGrid();renderBills();};
     g.appendChild(d);
   }
+  // Takeaway button
+  const tw=document.createElement('div');
+  tw.className='tbl-btn'+(billsSelectedTable==='takeaway'?' active':'');
+  tw.style.background=billsSelectedTable==='takeaway'?'var(--amber)':'';
+  tw.style.color=billsSelectedTable==='takeaway'?'white':'';
+  tw.style.borderColor=billsSelectedTable==='takeaway'?'var(--amber)':'';
+  tw.innerHTML='<span class="tbl-icon">🥡</span>Takeaway';
+  tw.onclick=function(){billsSelectedTable='takeaway';buildBillsTableGrid();renderBills();};
+  g.appendChild(tw);
 }
 
 async function renderBills(){
@@ -823,7 +855,7 @@ async function renderBills(){
 
   await loadOrders(); // uses server with localStorage fallback
 
-  const tableOrders=localOrders.filter(function(o){return o.tableNum===billsSelectedTable;});
+  const tableOrders=localOrders.filter(function(o){return billsSelectedTable==='takeaway'?o.isTakeaway:o.tableNum===billsSelectedTable&&!o.isTakeaway;});
 
   if(!tableOrders.length){
     el.innerHTML='<div class="bills-empty">No orders for Table '+billsSelectedTable+' yet.<br><small style="color:var(--text3)">('+localOrders.length+' total orders on other tables)</small></div>';
@@ -847,7 +879,7 @@ async function renderBills(){
     const hasAllPrices=cust.items.every(function(x){return typeof x.price==='number';});
     const total=cust.items.reduce(function(s,x){return s+(x.price||0);},0);
     html+='<div class="bill-card">';
-    html+='<div class="bill-card-header"><div><div class="bill-card-name">'+cust.name+'</div><div style="font-size:11px;color:var(--blue-dark);font-weight:700">Table '+billsSelectedTable+'</div></div>';
+    html+='<div class="bill-card-header"><div><div class="bill-card-name">'+cust.name+'</div><div style="font-size:11px;color:var(--blue-dark);font-weight:700">'+(billsSelectedTable==='takeaway'?'🥡 Takeaway':'Table '+billsSelectedTable)+'</div></div>';
     if(isPaid){html+='<span class="bill-paid-stamp">✓ Paid</span>';}
     else if(hasAllPrices){html+='<div class="bill-card-total">$'+total.toFixed(2)+'</div>';}
     else{html+='<div class="bill-card-total" style="font-size:13px;color:var(--text2)">See items</div>';}
