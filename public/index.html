@@ -348,7 +348,7 @@ const store={
 
 // ── SETTINGS ──
 let settings=JSON.parse(store.getItem('eileens_settings')||'{}');
-settings={specialName:'Weekly special',specialPrice:1.50,numTables:5,price_cap:4.00,price_fw:4.00,price_esp:3.50,price_tea:3.50,price_bab:2.00,price_hch:4.00,price_tst:5.00,...settings};
+settings={specialName:'Weekly special',specialPrice:1.50,numTables:8,price_cap:4.00,price_fw:4.00,price_esp:3.50,price_tea:3.50,price_bab:2.00,price_hch:4.00,price_tst:5.00,...settings};
 
 function getDrinks(){return[
   {id:'cap',name:'Cappuccino',img:IMGS.cappuccino,price:+settings.price_cap,milk:true},
@@ -451,7 +451,7 @@ async function pushOrder(order){
 }
 
 // ── WAITER STATE ──
-let wst={table:null,isTakeaway:false,curCust:0,orders:[newOrder(),newOrder(),newOrder(),newOrder()],custNames:['','','','']};
+let wst={table:null,isTakeaway:false,curCust:0,orders:[newOrder(),newOrder(),newOrder(),newOrder(),newOrder(),newOrder(),newOrder(),newOrder(),newOrder(),newOrder()],custNames:['','','','','','','','','',''],maxCust:5};
 let waiterTab='orderTab';
 
 function newOrder(){return{drinks:[],foods:[]};}
@@ -503,7 +503,9 @@ function buildTableGrid(){
 function setTable(n){
   wst.table=n;
   wst.isTakeaway=false;
+  wst.maxCust=5;
   buildTableGrid();
+  buildCustTabs();
   document.getElementById('waiterSub').textContent='Table '+n;
   refreshSummaryPanel();
 }
@@ -511,14 +513,16 @@ function setTable(n){
 function setTakeaway(){
   wst.table='takeaway';
   wst.isTakeaway=true;
+  wst.maxCust=10;
   buildTableGrid();
+  buildCustTabs();
   document.getElementById('waiterSub').textContent='Takeaway 🥡';
   refreshSummaryPanel();
 }
 
 function buildCustTabs(){
   const g=document.getElementById('custTabs');g.innerHTML='';
-  for(let i=0;i<4;i++){
+  for(let i=0;i<(wst.maxCust||5);i++){
     const d=document.createElement('div');
     d.className='cust-tab'+(wst.curCust===i?' active':'');
     const hasItems=wst.orders[i].drinks.length>0||wst.orders[i].foods.length>0;
@@ -615,7 +619,7 @@ function refreshSummaryPanel(){
   let total=0,hasItems=false;
   let html='<div class="summary-card">';
   let hasAny=false;
-  for(let i=0;i<4;i++){
+  for(let i=0;i<(wst.maxCust||5);i++){
     const o=wst.orders[i];const name=wst.custNames[i]||'Customer '+(i+1);
     [...o.drinks,...o.foods].forEach(item=>{
       if(!item) return;
@@ -651,7 +655,7 @@ async function sendOrder(){
   btn.disabled=true;btn.textContent='Sending…';
 
   const items=[];
-  for(let i=0;i<4;i++){
+  for(let i=0;i<(wst.maxCust||5);i++){
     const o=wst.orders[i];const who=wst.custNames[i]||'Customer '+(i+1);
     [...o.drinks,...o.foods].forEach(item=>{
       if(!item) return;
@@ -678,7 +682,7 @@ async function sendOrder(){
   await pushOrder(order);
 
   // reset order state but keep table selected
-  wst={table:wst.table,isTakeaway:wst.isTakeaway||false,curCust:0,orders:[newOrder(),newOrder(),newOrder(),newOrder()],custNames:['','','','']};
+  wst={table:wst.table,isTakeaway:wst.isTakeaway||false,curCust:0,orders:[newOrder(),newOrder(),newOrder(),newOrder(),newOrder(),newOrder(),newOrder(),newOrder(),newOrder(),newOrder()],custNames:['','','','','','','','','',''],maxCust:wst.isTakeaway?10:5};
   buildOrderScreen();
   btn.disabled=false;btn.textContent='Send to Kitchen';
 
