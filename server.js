@@ -2,13 +2,13 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const app = express();
-
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 let orders = [];
 let doneMap = {};
+let settings = {};
 
 app.get('/orders', (req, res) => {
   res.json({ orders, doneMap });
@@ -31,6 +31,15 @@ app.post('/done', (req, res) => {
 app.post('/clear', (req, res) => {
   orders = [];
   doneMap = {};
+  res.json({ ok: true });
+});
+
+app.get('/settings', (req, res) => {
+  res.json(settings);
+});
+
+app.post('/settings', (req, res) => {
+  Object.assign(settings, req.body);
   res.json({ ok: true });
 });
 
