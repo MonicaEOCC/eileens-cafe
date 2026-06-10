@@ -1048,13 +1048,13 @@ function loadSettings(){
   document.getElementById('numTables').value=settings.numTables;
 }
 function saveSettings(){
-  settings.price_cap=parseFloat(document.getElementById('price_cap').value)||4.00;
-  settings.price_fw=parseFloat(document.getElementById('price_fw').value)||4.00;
-  settings.price_esp=parseFloat(document.getElementById('price_esp').value)||3.50;
-  settings.price_tea=parseFloat(document.getElementById('price_tea').value)||3.50;
-  settings.price_bab=parseFloat(document.getElementById('price_bab').value)||2.00;
-  settings.price_hch=parseFloat(document.getElementById('price_hch').value)||4.00;
-  settings.price_tst=parseFloat(document.getElementById('price_tst').value)||5.00;
+  settings.price_cap=parseFloat(document.getElementById('price_cap').value)||2.00;
+  settings.price_fw=parseFloat(document.getElementById('price_fw').value)||2.00;
+  settings.price_esp=parseFloat(document.getElementById('price_esp').value)||2.00;
+  settings.price_tea=parseFloat(document.getElementById('price_tea').value)||2.00;
+  settings.price_bab=parseFloat(document.getElementById('price_bab').value)||1.00;
+  settings.price_hch=parseFloat(document.getElementById('price_hch').value)||2.00;
+  settings.price_tst=parseFloat(document.getElementById('price_tst').value)||2.00;
   settings.specialName=document.getElementById('specialName').value.trim()||'Weekly special';
   settings.specialPrice=parseFloat(document.getElementById('specialPrice').value)||1.50;
   settings.numTables=parseInt(document.getElementById('numTables').value)||5;
