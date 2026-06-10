@@ -360,8 +360,8 @@ const SIZES_ESP=[
 ];
 
 // ── SETTINGS ──
-let settings=JSON.parse(store.getItem('eileens_settings')||'{}');
-settings={specialName:'Weekly special',specialPrice:1.50,numTables:8,price_cap:2.00,price_fw:2.00,price_esp:2.00,price_tea:2.00,price_bab:1.00,price_hch:2.00,price_tst:2.00,...settings};
+const DEFAULTS={specialName:'Weekly special',specialPrice:1.50,numTables:8,price_cap:4.00,price_fw:4.00,price_esp:3.50,price_tea:3.50,price_bab:1.50,price_hch:4.00,price_tst:5.00};
+let settings={...DEFAULTS,...JSON.parse(store.getItem('eileens_settings')||'{}')};
 
 function getDrinks(){return[
   {id:'cap',name:'Cappuccino',img:IMGS.cappuccino,price:+settings.price_cap,milk:true,size:'std'},
@@ -469,7 +469,23 @@ let waiterTab='orderTab';
 
 function newOrder(){return{drinks:[],foods:[]};}
 
-function initWaiter(){
+async function fetchSettingsFromServer(){
+  try{
+    const res=await fetch(SERVER_URL+'/settings',{signal:AbortSignal.timeout(5000)});
+    if(res.ok){
+      const serverSettings=await res.json();
+      if(serverSettings&&Object.keys(serverSettings).length){
+        settings={...DEFAULTS,...serverSettings};
+        store.setItem('eileens_settings',JSON.stringify(settings));
+      }
+    }
+  }catch(e){
+    console.log('Could not fetch settings from server, using local cache');
+  }
+}
+
+async function initWaiter(){
+  await fetchSettingsFromServer();
   loadSettings();
   buildOrderScreen();
   refreshSentTab();
@@ -832,6 +848,7 @@ async function refreshSentTab(){
 let kitchenPollInterval=null;
 
 function initKitchen(){
+  fetchSettingsFromServer();
   loadAndRenderKitchen();
   kitchenPollInterval=setInterval(loadAndRenderKitchen,8000);
 }
@@ -1047,20 +1064,29 @@ function loadSettings(){
   document.getElementById('specialPrice').value=settings.specialPrice;
   document.getElementById('numTables').value=settings.numTables;
 }
-function saveSettings(){
-  settings.price_cap=parseFloat(document.getElementById('price_cap').value)||2.00;
-  settings.price_fw=parseFloat(document.getElementById('price_fw').value)||2.00;
-  settings.price_esp=parseFloat(document.getElementById('price_esp').value)||2.00;
-  settings.price_tea=parseFloat(document.getElementById('price_tea').value)||2.00;
-  settings.price_bab=parseFloat(document.getElementById('price_bab').value)||1.00;
-  settings.price_hch=parseFloat(document.getElementById('price_hch').value)||2.00;
-  settings.price_tst=parseFloat(document.getElementById('price_tst').value)||2.00;
+async function saveSettings(){
+  settings.price_cap=parseFloat(document.getElementById('price_cap').value)||4.00;
+  settings.price_fw=parseFloat(document.getElementById('price_fw').value)||4.00;
+  settings.price_esp=parseFloat(document.getElementById('price_esp').value)||3.50;
+  settings.price_tea=parseFloat(document.getElementById('price_tea').value)||3.50;
+  settings.price_bab=parseFloat(document.getElementById('price_bab').value)||1.50;
+  settings.price_hch=parseFloat(document.getElementById('price_hch').value)||4.00;
+  settings.price_tst=parseFloat(document.getElementById('price_tst').value)||5.00;
   settings.specialName=document.getElementById('specialName').value.trim()||'Weekly special';
   settings.specialPrice=parseFloat(document.getElementById('specialPrice').value)||1.50;
   settings.numTables=parseInt(document.getElementById('numTables').value)||5;
   store.setItem('eileens_settings',JSON.stringify(settings));
+  try{
+    await fetch(SERVER_URL+'/settings',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(settings)
+    });
+    alert('Settings saved ✓ — all devices will update on next refresh');
+  }catch(e){
+    alert('Saved locally only — server unreachable');
+  }
   buildOrderScreen();
-  alert('Settings saved ✓');
 }
 
 // ── INIT ──
