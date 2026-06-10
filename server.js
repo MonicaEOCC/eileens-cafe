@@ -8,7 +8,11 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 let orders = [];
 let doneMap = {};
-let settings = {};
+let settings = {
+  specialName:'Weekly special', specialPrice:1.50, numTables:8,
+  price_cap:2.00, price_fw:2.00, price_esp:2.00, price_tea:2.00,
+  price_bab:1.00, price_hch:2.00, price_tst:2.00
+};
 
 app.get('/orders', (req, res) => {
   res.json({ orders, doneMap });
