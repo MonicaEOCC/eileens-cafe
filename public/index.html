@@ -669,7 +669,7 @@ function buildOpts(optsId,type){
       });
       html+='</div>';
     }
-    if(entry.tea){
+   if(entry.tea||entry.id==='lb'){
       html+='<div class="opts-label" style="font-size:10px;margin-top:6px;margin-bottom:4px">Notes (optional)</div>';
       html+='<input class="name-input" style="font-size:13px;padding:8px 10px" placeholder="e.g. extra hot, less sugar" value="'+(entry.comment||'').replace(/"/g,'&quot;')+'" oninput="updateComment(\''+type+'\','+idx+',this.value)">';
     }
