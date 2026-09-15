@@ -610,7 +610,8 @@ function pickItem(type,item,optsId){
     tea:item.tea?TEAS[0]:null,
     bread:item.bread?BREADS[0]:null,
     spread:item.spread?SPREADS[0]:null,
-    size:item.size==='std'?SIZES_STD[0]:item.size==='esp'?SIZES_ESP[0]:null
+    size:item.size==='std'?SIZES_STD[0]:item.size==='esp'?SIZES_ESP[0]:null,
+            comment:''
   });
   buildMenuGrids();
   refreshSummaryPanel();
@@ -668,6 +669,10 @@ function buildOpts(optsId,type){
       });
       html+='</div>';
     }
+    if(entry.tea){
+      html+='<div class="opts-label" style="font-size:10px;margin-top:6px;margin-bottom:4px">Notes (optional)</div>';
+      html+='<input class="name-input" style="font-size:13px;padding:8px 10px" placeholder="e.g. extra hot, less sugar" value="'+(entry.comment||'').replace(/"/g,'&quot;')+'" oninput="updateComment(\''+type+'\','+idx+',this.value)">';
+    }
     html+='</div>';
   });
   el.innerHTML=html;
@@ -686,7 +691,11 @@ function pickOpt(type,idx,opt,id){
   buildOpts(type==='drink'?'drinkOpts':'foodOpts',type);
   refreshSummaryPanel();
 }
-
+function updateComment(type,idx,val){
+  const arr=type==='drink'?wst.orders[wst.curCust].drinks:wst.orders[wst.curCust].foods;
+  if(arr[idx]) arr[idx].comment=val;
+  refreshSummaryPanel();
+}
 function refreshSummaryPanel(){
   let total=0,hasItems=false;
   let html='<div class="summary-card">';
@@ -703,6 +712,7 @@ function refreshSummaryPanel(){
       if(item.milk) detail+=(detail?', ':'')+item.milk.label+' milk';
       if(item.bread) detail+=(detail?', ':'')+item.bread.label+' bread';
       if(item.spread) detail+=(detail?', ':'')+item.spread.label;
+      if(item.comment) detail+=(detail?', ':'')+'📝 '+item.comment;
       html+='<div class="summary-row"><div><span class="s-who">'+name+'</span><span class="s-item">'+item.name+'</span>'+(detail?'<div class="s-detail">'+detail+'</div>':'')+'</div><button class="del-x" onclick="removeItem('+i+',\''+item._uid+'\')">✕</button></div>';
     });
   }
@@ -821,6 +831,7 @@ async function sendOrder(){
       if(item.milk) detail+=(detail?', ':'')+item.milk.label+' milk';
       if(item.bread) detail+=(detail?', ':'')+item.bread.label+' bread';
       if(item.spread) detail+=(detail?', ':'')+item.spread.label;
+      if(item.comment) detail+=(detail?', ':'')+'📝 '+item.comment;
       items.push({name:item.name,detail,img:item.img,type:getDrinks().find(d=>d.id===item.id)?'drink':'food',who,status:'pending',price:item.price,
         sizeImg:item.size?item.size.img:null,milkImg:item.milk?item.milk.img:null,teaImg:item.tea?item.tea.img:null,breadImg:item.bread?item.bread.img:null,spreadImg:item.spread?item.spread.img:null});
     });
