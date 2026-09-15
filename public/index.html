@@ -762,11 +762,36 @@ function printOrder(order){
 
   html+='</body></html>';
 
-  // Open print window
-  const win=window.open('','_blank','width=800,height=600');
-  win.document.write(html);
-  win.document.close();
-  win.onload=function(){ win.print(); };
+  // Print via a hidden iframe instead of window.open().
+  // iOS Safari blocks window.open()/popups once any `await` has happened
+  // before the call, which made printing unreliable on iPad. An iframe
+  // avoids the popup permission issue entirely and works consistently
+  // with AirPrint.
+  let printFrame=document.getElementById('printFrame');
+  if(!printFrame){
+    printFrame=document.createElement('iframe');
+    printFrame.id='printFrame';
+    printFrame.style.position='fixed';
+    printFrame.style.right='0';
+    printFrame.style.bottom='0';
+    printFrame.style.width='0';
+    printFrame.style.height='0';
+    printFrame.style.border='0';
+    document.body.appendChild(printFrame);
+  }
+
+  const frameDoc=printFrame.contentWindow.document;
+  frameDoc.open();
+  frameDoc.write(html);
+  frameDoc.close();
+
+  // Give the iframe a moment to render images before printing.
+  printFrame.onload=function(){
+    setTimeout(function(){
+      printFrame.contentWindow.focus();
+      printFrame.contentWindow.print();
+    },250);
+  };
 }
 
 async function sendOrder(){
